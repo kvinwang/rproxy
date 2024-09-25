@@ -44,7 +44,7 @@ pub struct SniHandler {
 pub struct Tls {
     pub certificate: String,
     pub key: String,
-    pub handler: Box<Handler>,
+    pub handler: Option<Box<Handler>>,
     pub sni: Vec<SniHandler>
 }
 
@@ -131,17 +131,20 @@ impl Settings {
 
 pub async fn build_listener(listener: &Listener) -> Result<Box<dyn listener::Listener>, Error> {
     Ok(match listener {
-        Listener::Socket(s) => Box::new(TcpListener::new(&s.listen, build_handler(&s.handler).await?).await?)
+        Listener::Socket(s) => Box::new(TcpListener::new(&s.listen, build_handler(Some(&s.handler)).await?).await?)
     })
 }
 
 #[async_recursion]
-pub async fn build_handler(handler: &Handler) -> Result<Box<dyn handler::Handler + Send + Sync + Unpin>, Error> {
+pub async fn build_handler(handler: Option<&Handler>) -> Result<Box<dyn handler::Handler + Send + Sync + Unpin>, Error> {
+    let Some(handler) = handler else {
+        return Ok(Box::new(handler::NullHandler) as _);
+    };
     let handler: Box<dyn handler::Handler + Send + Sync + Unpin> = match handler {
         Handler::Tunnel(s) => Box::new(TunnelHandler::new(s.target.clone())),
-        Handler::Tls(s) => Box::new(TlsHandler::new(s, build_handler(&s.handler).await?)?),
-        Handler::LazyTls(s) => Box::new(LazyTlsHandler::new(s, build_handler(&s.handler).await?, try_join_all(s.sni.iter().map(|x| async {
-            Ok::<tls::SniHandler, Error>(tls::SniHandler::new(&x.hostname, build_handler(&x.handler).await?, &x.certificate, &x.key)?)
+        Handler::Tls(s) => Box::new(TlsHandler::new(s, build_handler(s.handler.as_deref()).await?)?),
+        Handler::LazyTls(s) => Box::new(LazyTlsHandler::new(s, build_handler(s.handler.as_deref()).await?, try_join_all(s.sni.iter().map(|x| async {
+            Ok::<tls::SniHandler, Error>(tls::SniHandler::new(&x.hostname, build_handler(Some(&x.handler)).await?, &x.certificate, &x.key)?)
         })).await?)?),
         Handler::Http(s) => Box::new(HttpHandler::new(build_service(&s.service, s.layers.as_ref()).await?)),
         Handler::Http1(s) => Box::new(Http1Handler::new(build_service(&s.service, s.layers.as_ref()).await?)),
