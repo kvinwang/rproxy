@@ -1,0 +1,12 @@
+[Unit]
+Description=rproxy reverse proxy service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/rproxy --config /etc/rproxy/config.yaml
+Restart=on-failure
+User=rproxy
+Group=rproxy
+
+[Install]
+WantedBy=multi-user.target

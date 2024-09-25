@@ -1,0 +1,11 @@
+servers:
+  # TCP socket listener
+  - type: socket
+    listen: '0.0.0.0:8443'
+    # TLS protocol handler
+    handler:
+      type: lazytls
+      # Default certificate and HTTP protocol handler
+      certificate: /etc/rproxy/certs/cert.pem
+      key: /etc/rproxy/certs/key.pem
+      sni: []
