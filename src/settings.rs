@@ -120,9 +120,9 @@ pub struct Route {
 }
 
 impl Settings {
-    pub fn new() -> Result<Self, ConfigError> {
+    pub fn new(config_file: &str) -> Result<Self, ConfigError> {
         let s = Config::builder()
-            .add_source(File::with_name("config.yaml"))
+            .add_source(File::with_name(config_file))
             .build()?;
 
         s.try_deserialize()
