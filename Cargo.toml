@@ -27,3 +27,4 @@ serde_derive = "1.0.8"
 tokio-rustls = "0.26"
 http-body-util = "0.1"
 clap = { version = "4.5.18", features = ["derive"] }
+tracing-subscriber = "0.3.18"

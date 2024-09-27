@@ -1,17 +1,5 @@
-mod handler;
-mod io;
-mod listener;
-mod settings;
-
-mod http;
-mod tls;
-mod tunnel;
-mod error;
-
-use futures::future::{join_all, try_join_all};
-use settings::{build_listener, Settings};
-use error::Error;
 use clap::Parser;
+use rproxy::{run, Error};
 
 #[derive(Parser)]
 struct Args {
@@ -21,11 +9,8 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    tracing_subscriber::fmt::init();
+
     let args = Args::parse();
-    let settings = Settings::new(&args.config)?;
-
-    let listeners = try_join_all(settings.servers.iter().map(build_listener)).await?;
-    join_all(listeners.iter().map(|l| l.handle())).await;
-
-    Ok(())
+    run(&args.config).await
 }
