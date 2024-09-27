@@ -129,7 +129,7 @@ impl Settings {
     }
 }
 
-pub async fn build_listener(listener: &Listener) -> Result<Box<dyn listener::Listener>, Error> {
+pub async fn build_listener(listener: &Listener) -> Result<Box<dyn listener::Listener + Send>, Error> {
     Ok(match listener {
         Listener::Socket(s) => Box::new(TcpListener::new(&s.listen, build_handler(Some(&s.handler)).await?).await?)
     })
